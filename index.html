@@ -272,6 +272,7 @@
     <script>
         // --- 글로벌 변수 선언 (config.js 연동) ---
         // 이 구조를 그대로 유지하되, 하단에서 이 변수명을 정확히 호출해야 합니다.
+        // ENV_CONFIG 객체가 정의되지 않은 경우를 대비하여 기본값을 설정합니다.
         const GEMINI_API_KEY = (typeof ENV_CONFIG !== "undefined") ? ENV_CONFIG.GEMINI_API_KEY : "";
         let timeLeft = 180;
         let timerInterval = null;
