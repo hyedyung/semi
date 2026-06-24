@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI NPC 설득 게임: 고집불통 전구 로봇을 켜라! (Gemini 버전)</title>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"
+        integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+    <script src="./config.js"></script>
+    <style>
+        /* --- 기본 리셋 및 레이아웃 --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Malgun Gothic', '맑은 고딕', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #1a1e24;
+            color: #ffffff;
+            padding: 20px;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #2c323f;
+            border: 4px solid #4f5d75;
+            border-radius: 10px;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        /* --- 상단: 대시보드 패널 --- */
+        .dashboard-panel {
+            background-color: #1f242e;
+            border: 2px solid #3d4859;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .timer-box {
+            float: left;
+            width: 30%;
+            font-size: 14px;
+            font-weight: bold;
+            color: #ff6b6b;
+            line-height: 30px;
+        }
+
+        .gauge-box {
+            float: right;
+            width: 70%;
+            text-align: right;
+        }
+
+        .gauge-label {
+            display: inline-block;
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffd166;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .progress-container {
+            display: inline-block;
+            width: 150px;
+            height: 20px;
+            background-color: #11141a;
+            border: 2px solid #4f5d75;
+            border-radius: 10px;
+            vertical-align: middle;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #06d6a0;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .clear-float {
+            clear: both;
+        }
+
+        /* --- 중앙: 로봇 및 말풍선 UI --- */
+        .stage-area {
+            position: relative;
+            height: 280px;
+            background-color: #222831;
+            border: 2px dashed #4f5d75;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+
+        .speech-bubble {
+            position: relative;
+            background: #ffffff;
+            color: #333333;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1.5;
+            border: 3px solid #ffd166;
+            min-height: 60px;
+        }
+
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border: 15px solid transparent;
+            border-top-color: #ffffff;
+            border-bottom: 0;
+            border-left: 0;
+            margin-left: -7.5px;
+            margin-bottom: -15px;
+        }
+
+        .robot-volt {
+            width: 100px;
+            margin: 20px auto 0 auto;
+            text-align: center;
+            position: relative;
+        }
+
+        .robot-bulb {
+            width: 30px;
+            height: 30px;
+            background-color: #555555;
+            border-radius: 50%;
+            margin: 0 auto;
+            border: 2px solid #ffffff;
+        }
+
+        .robot-head {
+            width: 60px;
+            height: 50px;
+            background-color: #a3b1c6;
+            border: 2px solid #4f5d75;
+            border-radius: 6px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .robot-eye {
+            width: 10px;
+            height: 10px;
+            background-color: #00bcd4;
+            border-radius: 50%;
+            position: absolute;
+            top: 15px;
+        }
+
+        .robot-eye.left {
+            left: 12px;
+        }
+
+        .robot-eye.right {
+            right: 12px;
+        }
+
+        .robot-body {
+            width: 80px;
+            height: 70px;
+            background-color: #708090;
+            border: 2px solid #4f5d75;
+            border-radius: 4px;
+            margin: 2px auto 0 auto;
+        }
+
+        /* --- 하단: 채팅 입력창 UI --- */
+        .input-panel {
+            background-color: #1f242e;
+            padding: 10px;
+            border-radius: 6px;
+            border: 2px solid #3d4859;
+        }
+
+        .chat-input {
+            width: 78%;
+            height: 40px;
+            padding: 0 10px;
+            font-size: 14px;
+            border: 2px solid #4f5d75;
+            background-color: #11141a;
+            color: #ffffff;
+            border-radius: 4px;
+            float: left;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #ffd166;
+        }
+
+        .send-btn {
+            width: 20%;
+            height: 40px;
+            background-color: #ff9f1c;
+            border: none;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+        }
+
+        .send-btn:hover {
+            background-color: #ffbf69;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <div class="dashboard-panel">
+            <div class="timer-box">
+                남은 시간: <span id="timer-count">180</span>초
+            </div>
+            <div class="gauge-box">
+                <span class="gauge-label">충전 점수</span>
+                <div class="progress-container">
+                    <div id="charge-progress" class="progress-bar"></div>
+                </div>
+                <span id="score-text" style="font-size:14px; font-weight:bold; margin-left:5px;">0%</span>
+            </div>
+            <div class="clear-float"></div>
+        </div>
+
+        <div class="stage-area">
+            <div id="volt-bubble" class="speech-bubble">
+                치익... 나는 전구 로봇 볼트다. 내 머리의 전구를 켜고 싶다면, '전기 회로에서 전구에 불이 들어오는 원리'를 정확하게 논리적으로 설명해봐라. 대충 말하면 절대 안 들을 거다!
+            </div>
+
+            <div class="robot-volt">
+                <div id="volt-bulb" class="robot-bulb"></div>
+                <div class="robot-head">
+                    <div class="robot-eye left"></div>
+                    <div class="robot-eye right"></div>
+                </div>
+                <div class="robot-body"></div>
+            </div>
+        </div>
+
+        <div class="input-panel">
+            <input type="text" id="user-reasoning" class="chat-input" placeholder="원리를 설명해주세요 (예: 전류, 회로, 도체 포함)..."
+                autocomplete="off">
+            <button type="button" id="btn-submit" class="send-btn">전송</button>
+            <div class="clear-float"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- 글로벌 변수 선언 (config.js 연동) ---
+        // 이 구조를 그대로 유지하되, 하단에서 이 변수명을 정확히 호출해야 합니다.
+        const GEMINI_API_KEY = (typeof ENV_CONFIG !== "undefined") ? ENV_CONFIG.GEMINI_API_KEY : "";
+        let timeLeft = 180;
+        let timerInterval = null;
+        let isProcessing = false;
+        // --- Gemini System Instruction (페르소나) ---
+        const systemInstruction = "너는 천재 과학자 에디슨의 연구실에 있는 전구 로봇 '볼트(Volt)'야. 깐깐하고 논리적이며, 인간의 대충 하는 설명은 알아듣지 못해.\n" +
+            "유저(초등학생 고학년)는 오늘 배운 '전기 회로에서 전구에 불이 들어오는 원리'를 너에게 정확히 설명해서 네 전원(전구)을 켜야 해.\n" +
+            "[통과 조건]: 유저의 답변에 '전류', '회로', '직렬/병렬', '도체' 등 초등 과학 교과에 나오는 정확한 명칭이 포함되어야 하며, 전선이 끊기지 않고 연결되어야 전류가 흐른다는 과학적 인과관계가 명확해야 함.\n" +
+            "조건을 만족하면 status를 success로 주고 score를 80~100 사이로 줘. 부족하면 status를 fail로 주고 score를 0~50 사이로 기재해.\n" +
+            "출력은 반드시 다른 설명 없이 아래 JSON 오브젝트 포맷으로만 응답해줘:\n" +
+            "{ \"status\": \"success\" 또는 \"fail\", \"score\": 0~100, \"reply\": \"로봇 특유의 깐깐하고 전자음이 섞인 말투 대사\" }";
+
+        $(document).ready(function () {
+            startTimer();
+
+            $("#btn-submit").click(function () {
+                sendUserExplanation();
+            });
+
+            $("#user-reasoning").keypress(function (e) {
+                if (e.which === 13) {
+                    sendUserExplanation();
+                }
+            });
+        });
+
+        function startTimer() {
+            timerInterval = setInterval(function () {
+                timeLeft = timeLeft - 1;
+                $("#timer-count").text(timeLeft);
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert("제한 시간이 초과되었습니다! 시스템 재부팅...");
+                    location.reload();
+                }
+            }, 1000);
+        }
+
+        // --- Gemini API 호출 비동기 함수 ---
+        // index.html 내의 기존 sendUserExplanation 함수를 이 코드로 변경해 주세요.
+        function sendUserExplanation() {
+            if (isProcessing) return;
+
+            // $.trim을 이용해 앞뒤 공백을 확실하게 제거합니다.
+            const userText = $.trim($("#user-reasoning").val());
+            if (userText === "") {
+                alert("원리 설명을 입력해주세요!");
+                return;
+            }
+
+            // 변수가 정상적으로 로드되었는지 최종 검증
+            if (typeof ENV_CONFIG === "undefined" || !ENV_CONFIG.GEMINI_API_KEY || ENV_CONFIG.GEMINI_API_KEY.indexOf("내_실제") > -1) {
+                alert("config.js 파일이 없거나 API Key가 올바르지 않습니다. 다시 확인해 주세요.");
+                return;
+            }
+
+            // 안전하게 양끝 공백을 제거한 API Key 추출
+            const apiKey = $.trim(ENV_CONFIG.GEMINI_API_KEY);
+
+            isProcessing = true;
+            $("#btn-submit").text("분석중...").prop("disabled", true);
+            $("#volt-bubble").text("삐-리릭... 유저의 답변을 분석 중이다. 잠시만 기다려라...");
+
+            // 주소와 키를 확실하게 결합합니다.
+            // 모델명 명세를 2.0 버전으로 교체합니다.
+// const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY;
+// pro버전
+const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=" + GEMINI_API_KEY;
+
+            const payload = {
+                "contents": [{
+                    "parts": [{ "text": userText }]
+                }],
+                "systemInstruction": {
+                    "parts": [{ "text": systemInstruction }]
+                },
+                "generationConfig": {
+                    "responseMimeType": "application/json"
+                }
+            };
+
+            $.ajax({
+                url: geminiUrl,
+                type: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                data: JSON.stringify(payload),
+                success: function (response) {
+                    handleApiResponse(response);
+                },
+                error: function (xhr, status, error) {
+                    console.error("Gemini API Error: ", error);
+                    // 404나 에러가 나면 사용자에게 피드백 제공
+                    $("#volt-bubble").text("치이익... 주소 연결 실패(404) 혹은 네트워크 에러다. API Key를 다시 점검해라.");
+                },
+                complete: function () {
+                    isProcessing = false;
+                    $("#btn-submit").text("전송").prop("disabled", false);
+                }
+            });
+        }
+
+        function handleApiResponse(response) {
+            try {
+                // Gemini의 응답 객체 트리 파싱
+                const rawContent = response.candidates[0].content.parts[0].text;
+                const resData = JSON.parse(rawContent);
+
+                const status = resData.status;
+                const score = resData.score;
+                const reply = resData.reply;
+
+                $("#volt-bubble").text(reply);
+
+                $("#charge-progress").animate({
+                    width: score + "%"
+                }, 500);
+                $("#score-text").text(score + "%");
+
+                if (status === "success" || score >= 80) {
+                    $("#volt-bulb").css("background-color", "#ffd166");
+                    clearInterval(timerInterval);
+
+                    setTimeout(function () {
+                        alert("축하합니다! 로봇 충전 완료 및 탈출 성공!");
+                    }, 600);
+                } else {
+                    timeLeft = timeLeft - 5;
+                    if (timeLeft < 0) timeLeft = 0;
+                    $("#timer-count").text(timeLeft);
+
+                    $("#volt-bubble").css("border-color", "#ff6b6b");
+                    setTimeout(function () {
+                        $("#volt-bubble").css("border-color", "#ffd166");
+                    }, 500);
+                }
+
+                $("#user-reasoning").val("");
+
+            } catch (e) {
+                console.error("JSON Parsing Error: ", e);
+                $("#volt-bubble").text("치이익... 파싱 에러 발생. 로봇 오작동 중...");
+            }
+        }
+    </script>
+
+</body>
+
+</html>
